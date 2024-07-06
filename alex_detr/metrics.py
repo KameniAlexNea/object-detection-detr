@@ -9,6 +9,7 @@ from alex_detr import NUM_CLASS
 def nms_index(bboxes, scores, thr=0.6):
     return nms(bboxes, scores, thr)
 
+
 # https://discuss.huggingface.co/t/possible-fix-for-trainer-evaluation-with-object-detection/72307
 def compute_metrics(eval_pred: EvalPrediction):
     """
@@ -38,9 +39,9 @@ def compute_metrics(eval_pred: EvalPrediction):
         ).squeeze(-1)
         # index = nms_index(pred_boxes, pred_scores_for_labels, thr=NMS_THR)
         return {
-            "boxes": pred_boxes, # [index],
-            "scores": pred_scores_for_labels, # [index],
-            "labels": pred_labels # [index],
+            "boxes": pred_boxes,  # [index],
+            "scores": pred_scores_for_labels,  # [index],
+            "labels": pred_labels,  # [index],
         }
 
     predictions = [_extract_bbox(score, box) for score, box in zip(scores, pred_boxes)]

@@ -8,13 +8,12 @@ from PIL import Image
 from sklearn.preprocessing import LabelEncoder
 
 from alex_detr import IMAGE_FOLDER, TRAIN_CSV
-from alex_detr.transforms import (
-    Config
-)
+from alex_detr.transforms import Config
 
 
 def _check_nan(category_id):
     return category_id is not None and not np.isnan(category_id)
+
 
 def dropna_from_df(data: pd.DataFrame, frac: bool = 0.0):
     if not frac:
@@ -22,7 +21,12 @@ def dropna_from_df(data: pd.DataFrame, frac: bool = 0.0):
     data_wna = data.dropna()
     data_na = data[data["bbox"].isna()]
 
-    return pd.concat([data_wna, data_na.sample(random_state=41, frac=frac),])
+    return pd.concat(
+        [
+            data_wna,
+            data_na.sample(random_state=41, frac=frac),
+        ]
+    )
 
 
 def load_pd_dataframe(data_pth: str, training: bool = False, frac: bool = 0.0):
@@ -119,7 +123,9 @@ def transform_aug_ann(examples, is_test=False):
         for id_, cat_, ar_, box_ in zip(image_ids, categories, area, bboxes)
     ]
 
-    return Config.IMAGE_PROCESSOR(images=images, annotations=targets, return_tensors="pt")
+    return Config.IMAGE_PROCESSOR(
+        images=images, annotations=targets, return_tensors="pt"
+    )
 
 
 def train_val_split(train_ds: Dataset, test_size=0.1, seed=51):

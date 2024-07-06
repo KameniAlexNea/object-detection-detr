@@ -1,6 +1,5 @@
 import os
 
-
 os.environ["WANDB_PROJECT"] = "zindi_challenge"
 os.environ["WANDB_LOG_MODEL"] = "true"
 os.environ["WANDB_WATCH"] = "none"
@@ -10,22 +9,17 @@ os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 from transformers import (
+    AutoImageProcessor,
     AutoModelForObjectDetection,
     DetrForObjectDetection,
     EarlyStoppingCallback,
     Trainer,
-    AutoImageProcessor,
 )
-
-from alex_detr.dataset import (
-    collate_fn,
-    load_dataset,
-    transform_aug_ann,
-)
-from alex_detr.transforms import Config
-from alex_detr.metrics import compute_metrics
 
 from alex_detr.args_detr import get_arguments
+from alex_detr.dataset import collate_fn, load_dataset, transform_aug_ann
+from alex_detr.metrics import compute_metrics
+from alex_detr.transforms import Config
 
 args = get_arguments()
 
@@ -36,7 +30,7 @@ args = get_arguments()
 
 print("Start Training : ", os.getpid(), args.model_args.model_name)
 
-label2id = {"Thatch": 2, "Tin": 1, "Other": 0}
+label2id = {f"CL{i}": i for i in range(args.model_args.num_class)}
 id2label = {j: i for i, j in label2id.items()}
 model: DetrForObjectDetection = AutoModelForObjectDetection.from_pretrained(
     args.model_args.model_name,
@@ -51,7 +45,7 @@ Config.IMAGE_PROCESSOR = AutoImageProcessor.from_pretrained(
 Config.NUM_CLASS = args.model_args.num_class
 
 
-train_set = load_dataset(args.model_args.training_csv, nan_frac=0.15).with_transform(
+train_set = load_dataset(args.model_args.training_csv, nan_frac=args.model_args.nan_frac).with_transform(
     transform_aug_ann
 )
 eval_set = None

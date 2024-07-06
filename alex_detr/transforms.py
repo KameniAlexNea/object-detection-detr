@@ -1,5 +1,6 @@
 import albumentations as A
-from transformers import AutoImageProcessor, DetrImageProcessor
+from transformers import DetrImageProcessor
+
 
 class Config:
     IMAGE_SHAPE = 1333
@@ -29,7 +30,7 @@ class Config:
         ),
     )
 
-    IMAGE_PROCESSOR: DetrImageProcessor = None # init after loading
+    IMAGE_PROCESSOR: DetrImageProcessor = None  # init after loading
     NUM_CLASS: int = None
     # = AutoImageProcessor.from_pretrained(
     #     MODEL_NAME # if (MODEL_NAME != "nielsr/yolov10n") else "hustvl/yolos-small",
