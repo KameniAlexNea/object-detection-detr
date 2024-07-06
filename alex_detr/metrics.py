@@ -3,7 +3,7 @@ from torchmetrics.detection import MeanAveragePrecision
 from torchvision.ops import nms
 from transformers import EvalPrediction
 
-from alex_detr import NUM_CLASS, NMS_THR, CLS_THR
+from alex_detr import NUM_CLASS
 
 
 def nms_index(bboxes, scores, thr=0.6):

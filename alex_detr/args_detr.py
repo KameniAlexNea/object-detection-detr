@@ -20,10 +20,6 @@ class ModelArgs:
         metadata={"help": "The output directory where data images and training csv are saved."},
         default=None
     )
-    testing_csv: str = field(
-        metadata={"help": "The output directory where data images and training csv are saved."},
-        default=None
-    )
     # hustvl/yolos-small "jozhang97/deta-resnet-50-24-epochs" "hustvl/yolos-base" # "jozhang97/deta-resnet-50" # "facebook/detr-resnet-50"
     model_name: str = field(
         metadata={"help": "The output directory where data images and training csv are saved."},
@@ -36,7 +32,10 @@ class ModelArgs:
     )
     cls_thr: float = field(
         metadata={"help": "cls thr when compute metrics"},
-        default=0.75
+        default=0.25
+    )
+    num_class: int = field(
+        metadata={"help": "Number of classes supported"},
     )
 
 @dataclass

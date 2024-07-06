@@ -9,9 +9,7 @@ from sklearn.preprocessing import LabelEncoder
 
 from alex_detr import IMAGE_FOLDER, TRAIN_CSV
 from alex_detr.transforms import (
-    EVAL_TRANSFORM,
-    IMAGE_PROCESSOR,
-    TRAIN_TRANSFORM,
+    Config
 )
 
 
@@ -104,7 +102,7 @@ def _formatted_anns(image_id, category, area, bbox):
 
 # transforming a batch
 def transform_aug_ann(examples, is_test=False):
-    trf = TRAIN_TRANSFORM if not is_test else EVAL_TRANSFORM
+    trf = Config.TRAIN_TRANSFORM if not is_test else Config.EVAL_TRANSFORM
     image_ids = examples["image_id"]
     images, bboxes, area, categories = [], [], [], []
     for image, objects in zip(examples["image"], examples["objects"]):
@@ -121,7 +119,7 @@ def transform_aug_ann(examples, is_test=False):
         for id_, cat_, ar_, box_ in zip(image_ids, categories, area, bboxes)
     ]
 
-    return IMAGE_PROCESSOR(images=images, annotations=targets, return_tensors="pt")
+    return Config.IMAGE_PROCESSOR(images=images, annotations=targets, return_tensors="pt")
 
 
 def train_val_split(train_ds: Dataset, test_size=0.1, seed=51):
@@ -133,7 +131,7 @@ def train_val_split(train_ds: Dataset, test_size=0.1, seed=51):
 
 def collate_fn(batch: list):
     pixel_values = [item["pixel_values"] for item in batch]
-    encoding = IMAGE_PROCESSOR.pad(pixel_values, return_tensors="pt")
+    encoding = Config.IMAGE_PROCESSOR.pad(pixel_values, return_tensors="pt")
     labels = [item["labels"] for item in batch]
     batch = {}
     batch["pixel_values"] = encoding["pixel_values"]
