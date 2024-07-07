@@ -3,10 +3,9 @@ import os
 os.environ["WANDB_PROJECT"] = "zindi_challenge"
 os.environ["WANDB_LOG_MODEL"] = "true"
 os.environ["WANDB_WATCH"] = "none"
-os.environ["WANDB_NOTEBOOK_NAME"] = "train_hf"
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 from transformers import (
     AutoImageProcessor,
@@ -43,6 +42,9 @@ Config.IMAGE_PROCESSOR = AutoImageProcessor.from_pretrained(
     args.model_args.model_name,
 )
 Config.NUM_CLASS = args.model_args.num_class
+Config.NMS_THR = args.model_args.nms_thr
+Config.IMAGE_FOLDER = args.model_args.image_folder
+Config.TRAIN_CSV = args.model_args.training_csv
 
 
 train_set = load_dataset(args.model_args.training_csv, nan_frac=args.model_args.nan_frac).with_transform(

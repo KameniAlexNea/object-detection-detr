@@ -32,6 +32,9 @@ class Config:
 
     IMAGE_PROCESSOR: DetrImageProcessor = None  # init after loading
     NUM_CLASS: int = None
+    NMS_THR: float = 0.75
+    IMAGE_FOLDER: str = None
+    TRAIN_CSV: str = None
     # = AutoImageProcessor.from_pretrained(
     #     MODEL_NAME # if (MODEL_NAME != "nielsr/yolov10n") else "hustvl/yolos-small",
     #     # revision="no_timm"

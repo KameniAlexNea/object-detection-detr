@@ -3,7 +3,7 @@ from torchmetrics.detection import MeanAveragePrecision
 from torchvision.ops import nms
 from transformers import EvalPrediction
 
-from alex_detr import NUM_CLASS
+from alex_detr.transforms import Config
 
 
 def nms_index(bboxes, scores, thr=0.6):
@@ -27,7 +27,7 @@ def compute_metrics(eval_pred: EvalPrediction):
     def _extract_bbox(score, box):
         # Extract the bounding boxes, labels, and scores from the model's output
         pred_scores = torch.from_numpy(score).softmax(dim=-1)[
-            ..., :NUM_CLASS
+            ..., :Config.NUM_CLASS
         ]  # Exclude the no-object class => take n classes supported for uniformity btw detr and deta
         pred_boxes = torch.from_numpy(box)
 

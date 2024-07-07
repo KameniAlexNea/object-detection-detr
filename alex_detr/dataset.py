@@ -7,7 +7,6 @@ from datasets import Dataset
 from PIL import Image
 from sklearn.preprocessing import LabelEncoder
 
-from alex_detr import IMAGE_FOLDER, TRAIN_CSV
 from alex_detr.transforms import Config
 
 
@@ -30,6 +29,7 @@ def dropna_from_df(data: pd.DataFrame, frac: bool = 0.0):
 
 
 def load_pd_dataframe(data_pth: str, training: bool = False, frac: bool = 0.0):
+    # columns : "image_id", "bbox", "category_id", "id"
     train = pd.read_csv(data_pth)
     if training:  # drop empty images in training
         print(train.isna().sum())
@@ -69,7 +69,7 @@ def create_annotation_img(data: pd.DataFrame):
         ]
     )
 
-    img = Image.open(os.path.join(IMAGE_FOLDER, f"{image_id}.tif"))
+    img = Image.open(os.path.join(Config.IMAGE_FOLDER, f"{image_id}.tif"))
     width, height = img.size
     return {
         "image_id": image_id_int,
@@ -80,7 +80,7 @@ def create_annotation_img(data: pd.DataFrame):
     }
 
 
-def load_dataset(data_pth=TRAIN_CSV, training: bool = True, nan_frac: bool = 0.0):
+def load_dataset(data_pth=Config.TRAIN_CSV, training: bool = True, nan_frac: bool = 0.0):
     train = load_pd_dataframe(data_pth, training, nan_frac)
     train_features = (
         train.groupby("image_id")[train.columns].apply(create_annotation_img).tolist()
