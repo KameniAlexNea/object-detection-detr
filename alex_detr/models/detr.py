@@ -15,23 +15,12 @@
 """ PyTorch DETR model."""
 
 
-import math
-from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 import torch
-from torch import Tensor, nn
-from transformers.activations import ACT2FN
-from transformers.modeling_attn_mask_utils import _prepare_4d_attention_mask
-from transformers.modeling_outputs import (
-    BaseModelOutput,
-    BaseModelOutputWithCrossAttentions,
-    Seq2SeqModelOutput,
-)
-from transformers.modeling_utils import PreTrainedModel
+from torch import nn
 from transformers.models.detr.configuration_detr import DetrConfig
 from transformers.utils import (
-    ModelOutput,
     add_start_docstrings,
     add_start_docstrings_to_model_forward,
     is_accelerate_available,
@@ -40,19 +29,17 @@ from transformers.utils import (
     is_vision_available,
     logging,
     replace_return_docstrings,
-    requires_backends,
 )
-from transformers.utils.backbone_utils import load_backbone
 
 if is_accelerate_available():
     from accelerate import PartialState
     from accelerate.utils import reduce
 
 if is_scipy_available():
-    from scipy.optimize import linear_sum_assignment
+    pass
 
 if is_timm_available():
-    from timm import create_model
+    pass
 
 if is_vision_available():
     from transformers.image_transforms import center_to_corners_format
@@ -68,16 +55,16 @@ DETR_PRETRAINED_MODEL_ARCHIVE_LIST = [
 ]
 
 from transformers.models.detr.modeling_detr import (
+    DETR_INPUTS_DOCSTRING,
+    DETR_START_DOCSTRING,
+    DetrHungarianMatcher,
+    DetrMLPPredictionHead,
+    DetrModel,
     DetrObjectDetectionOutput,
     DetrPreTrainedModel,
-    DETR_START_DOCSTRING,
-    DETR_INPUTS_DOCSTRING,
-    DetrModel,
-    DetrMLPPredictionHead,
+    dice_loss,
     generalized_box_iou,
     nested_tensor_from_tensor_list,
-    DetrHungarianMatcher,
-    dice_loss
 )
 
 
@@ -272,7 +259,6 @@ class DetrForObjectDetection(DetrPreTrainedModel):
             encoder_hidden_states=outputs.encoder_hidden_states,
             encoder_attentions=outputs.encoder_attentions,
         )
-
 
 
 def sigmoid_focal_loss(
@@ -540,4 +526,3 @@ class DetrLoss(nn.Module):
                     losses.update(l_dict)
 
         return losses
-

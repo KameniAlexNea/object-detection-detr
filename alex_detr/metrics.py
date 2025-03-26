@@ -3,11 +3,12 @@ from torchmetrics.detection import MeanAveragePrecision
 from torchvision.ops import nms
 from transformers import EvalPrediction
 
-from alex_detr import NUM_CLASS, NMS_THR, CLS_THR
+from alex_detr.transforms import Config
 
 
 def nms_index(bboxes, scores, thr=0.6):
     return nms(bboxes, scores, thr)
+
 
 # https://discuss.huggingface.co/t/possible-fix-for-trainer-evaluation-with-object-detection/72307
 def compute_metrics(eval_pred: EvalPrediction):
@@ -26,7 +27,7 @@ def compute_metrics(eval_pred: EvalPrediction):
     def _extract_bbox(score, box):
         # Extract the bounding boxes, labels, and scores from the model's output
         pred_scores = torch.from_numpy(score).softmax(dim=-1)[
-            ..., :NUM_CLASS
+            ..., :Config.NUM_CLASS
         ]  # Exclude the no-object class => take n classes supported for uniformity btw detr and deta
         pred_boxes = torch.from_numpy(box)
 
@@ -38,9 +39,9 @@ def compute_metrics(eval_pred: EvalPrediction):
         ).squeeze(-1)
         # index = nms_index(pred_boxes, pred_scores_for_labels, thr=NMS_THR)
         return {
-            "boxes": pred_boxes, # [index],
-            "scores": pred_scores_for_labels, # [index],
-            "labels": pred_labels # [index],
+            "boxes": pred_boxes,  # [index],
+            "scores": pred_scores_for_labels,  # [index],
+            "labels": pred_labels,  # [index],
         }
 
     predictions = [_extract_bbox(score, box) for score, box in zip(scores, pred_boxes)]
