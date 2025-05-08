@@ -9,7 +9,7 @@ class ModelArgs:
     num_class: int = field(
         metadata={"help": "Number of classes supported"},
     )
-    label_names: Optional[List[str]] = field(
+    names: Optional[List[str]] = field(
         default=None,
         metadata={"help": "List of class names. If provided, its length must match num_class."},
     )

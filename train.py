@@ -30,14 +30,14 @@ print("Start Training : ", os.getpid(), model_args.model_name)
 label2id = {f"CL{i}": i for i in range(model_args.num_class)}
 id2label = {j: i for i, j in label2id.items()}
 
-if model_args.label_names:
-    if len(model_args.label_names) == model_args.num_class:
-        label2id = {name: i for i, name in enumerate(model_args.label_names)}
-        id2label = {i: name for i, name in enumerate(model_args.label_names)}
-        print(f"Using custom label names: {model_args.label_names}")
+if model_args.names:
+    if len(model_args.names) == model_args.num_class:
+        label2id = {name: i for i, name in enumerate(model_args.names)}
+        id2label = {i: name for i, name in enumerate(model_args.names)}
+        print(f"Using custom label names: {model_args.names}")
     else:
         print(
-            f"Warning: `label_names` provided but length ({len(model_args.label_names)}) "
+            f"Warning: `label_names` provided but length ({len(model_args.names)}) "
             f"does not match `num_class` ({model_args.num_class}). Falling back to generic labels."
         )
         # Fallback to generic labels already handled by initial assignment
@@ -103,7 +103,7 @@ trainer = Trainer(
     train_dataset=train_set,
     eval_dataset=eval_set,
     tokenizer=image_processor,
-    compute_metrics=metrics_computer,
+    # compute_metrics=metrics_computer,
     callbacks=[EarlyStoppingCallback(early_stopping_patience=20)],
 )
 
