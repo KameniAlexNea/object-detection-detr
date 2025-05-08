@@ -11,7 +11,7 @@ class Config:
             A.Rotate(limit=179, p=0.4),
             # A.RandomRotate90(0.3),
             A.Blur(blur_limit=3, p=0.2),
-            A.GaussNoise(var_limit=(0.002, 0.01), p=0.2),
+            A.GaussNoise(std_range=(0.002, 0.01), p=0.2),
             A.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3),
             A.RandomBrightnessContrast(p=0.3),
         ],
@@ -24,10 +24,10 @@ class Config:
         [
             # A.LongestMaxSize(max_size=IMAGE_SHAPE, p=1),
         ],
-        bbox_params=A.BboxParams(
-            format="coco",
-            label_fields=["category"],
-        ),
+        # bbox_params=A.BboxParams(
+        #     format="coco",
+        #     label_fields=["category"],
+        # ),
     )
 
     IMAGE_PROCESSOR: DetrImageProcessor = None  # init after loading

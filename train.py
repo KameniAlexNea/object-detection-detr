@@ -1,7 +1,7 @@
 import os
 
-os.environ["WANDB_PROJECT"] = "zindi_challenge"
-os.environ["WANDB_LOG_MODEL"] = "true"
+os.environ["WANDB_PROJECT"] = "zindi_challenge_cacao"
+os.environ["WANDB_LOG_MODEL"] = "end"
 os.environ["WANDB_WATCH"] = "none"
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
@@ -70,9 +70,12 @@ trainer = Trainer(
     train_dataset=train_set,
     eval_dataset=eval_set,
     tokenizer=Config.IMAGE_PROCESSOR,
-    compute_metrics=compute_metrics,
+    # compute_metrics=compute_metrics,
     callbacks=[EarlyStoppingCallback(early_stopping_patience=20)],
 )
-trainer.evaluate()
+
+if eval_set is not None:
+    trainer.evaluate()
 trainer.train()
-trainer.evaluate()
+if eval_set is not None:
+    trainer.evaluate()

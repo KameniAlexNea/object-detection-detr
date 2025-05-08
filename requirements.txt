@@ -1,5 +1,5 @@
 debugpy 
-numpy 
+numpy
 matplotlib 
 scikit-image 
 albumentations 
@@ -8,16 +8,17 @@ pandas
 torchmetrics 
 tensorboard 
 imagecodecs
-transformers[torch]
+transformers[torch]==4.50.3
 pillow
-pycocotools==2.0.7
+pycocotools
 
 timm
 accelerate
 
-opencv-python==4.8.0.74
+opencv-python
 onnxruntime
 faster-coco-eval
 
 datasets
 wandb
+scikit-learn

@@ -1,10 +1,9 @@
 import json
-import os
 
 import numpy as np
 import pandas as pd
 from datasets import Dataset
-from PIL import Image
+from PIL import Image, ImageOps
 from sklearn.preprocessing import LabelEncoder
 
 from alex_detr.transforms import Config
@@ -30,7 +29,10 @@ def dropna_from_df(data: pd.DataFrame, frac: bool = 0.0):
 
 def load_pd_dataframe(data_pth: str, training: bool = False, frac: bool = 0.0):
     # columns : "image_id", "bbox", "category_id", "id"
-    train = pd.read_csv(data_pth)
+    train = (
+        pd.read_csv(data_pth) if data_pth.endswith(".csv") else pd.read_json(data_pth)
+    )
+    # train.columns = [i.replace("_x", "").replace("_y", "") for i in train.columns]
     if training:  # drop empty images in training
         print(train.isna().sum())
         train = dropna_from_df(train, frac)
@@ -45,7 +47,7 @@ def _create_bbox_data(bbox, category, id):
         "id": id,
         "area": bbox[2] * bbox[3],
         "bbox": bbox,
-        "category": int(category) - 1,  # convert 1,2,3 => 0,1,2
+        "category": int(category),  # convert 1,2,3 => 0,1,2
     }
 
 
@@ -58,19 +60,29 @@ def _to_dict(objects):
     }
 
 
+def load_image(filepath):
+    image = Image.open(filepath)
+    try:
+        return ImageOps.exif_transpose(image)
+    except Exception:
+        pass
+    return image
+
+
 def create_annotation_img(data: pd.DataFrame):
     image_id = data["image_id"].values[0]
+    width, height = data["w2"].values[0], data["h2"].values[0]
     image_id_int = data["image_id_int"].values[0]
     objects = _to_dict(
         [
             _create_bbox_data(bbox, category_id, id)
-            for (_, bbox, category_id, id, _) in data.values
+            for (bbox, category_id, id) in data[["bbox", "category_id", "id"]].values
             if _check_nan(category_id)
         ]
     )
 
-    img = Image.open(os.path.join(Config.IMAGE_FOLDER, f"{image_id}.tif"))
-    width, height = img.size
+    img = image_id
+    # width, height = img.size
     return {
         "image_id": image_id_int,
         "image": img,
@@ -80,7 +92,9 @@ def create_annotation_img(data: pd.DataFrame):
     }
 
 
-def load_dataset(data_pth=Config.TRAIN_CSV, training: bool = True, nan_frac: bool = 0.0):
+def load_dataset(
+    data_pth=Config.TRAIN_CSV, training: bool = True, nan_frac: bool = 0.0
+):
     train = load_pd_dataframe(data_pth, training, nan_frac)
     train_features = (
         train.groupby("image_id")[train.columns].apply(create_annotation_img).tolist()
@@ -110,7 +124,7 @@ def transform_aug_ann(examples, is_test=False):
     image_ids = examples["image_id"]
     images, bboxes, area, categories = [], [], [], []
     for image, objects in zip(examples["image"], examples["objects"]):
-        image = np.array(image.convert("RGB"))[:, :, ::-1]
+        image = np.array(load_image(image).convert("RGB"))[:, :, ::-1]
         out = trf(image=image, bboxes=objects["bbox"], category=objects["category"])
 
         area.append(objects["area"])
