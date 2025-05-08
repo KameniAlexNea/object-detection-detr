@@ -13,69 +13,96 @@ from transformers import (
     DetrForObjectDetection,
     EarlyStoppingCallback,
     Trainer,
+    TrainingArguments,
 )
 
-from alex_detr.args_detr import get_arguments
+from alex_detr.args_detr import get_arguments, ModelArgs
 from alex_detr.dataset import collate_fn, load_dataset, transform_aug_ann
-from alex_detr.metrics import compute_metrics
-from alex_detr.transforms import Config
+from alex_detr.metrics import compute_metrics_fn
+from alex_detr.transforms import Config as AugmentationConfig
 
-args = get_arguments()
+args_tuple = get_arguments()
+model_args: ModelArgs = args_tuple.model_args
+training_args: TrainingArguments = args_tuple.training_args
 
+print("Start Training : ", os.getpid(), model_args.model_name)
 
-# use this for Detr with Focal Loss
-# from alex_detr.model import DetrForObjectDetection
-
-
-print("Start Training : ", os.getpid(), args.model_args.model_name)
-
-label2id = {f"CL{i}": i for i in range(args.model_args.num_class)}
+label2id = {f"CL{i}": i for i in range(model_args.num_class)}
 id2label = {j: i for i, j in label2id.items()}
+
+image_processor = AutoImageProcessor.from_pretrained(
+    model_args.model_name,
+)
+
 model: DetrForObjectDetection = AutoModelForObjectDetection.from_pretrained(
-    args.model_args.model_name,
+    model_args.model_name,
     id2label=id2label,
     label2id=label2id,
     ignore_mismatched_sizes=True,
-    # revision="main",
 )
-Config.IMAGE_PROCESSOR = AutoImageProcessor.from_pretrained(
-    args.model_args.model_name,
-)
-Config.NUM_CLASS = args.model_args.num_class
-Config.NMS_THR = args.model_args.nms_thr
-Config.IMAGE_FOLDER = args.model_args.image_folder
-Config.TRAIN_CSV = args.model_args.training_csv
 
+# Prepare dataset transformations
+train_transform = AugmentationConfig.TRAIN_TRANSFORM
+eval_transform = AugmentationConfig.EVAL_TRANSFORM
 
-train_set = load_dataset(args.model_args.training_csv, nan_frac=args.model_args.nan_frac).with_transform(
-    transform_aug_ann
-)
-eval_set = None
-if args.model_args.validation_csv:
-    eval_set = load_dataset(args.model_args.validation_csv, False).with_transform(
-        lambda x: transform_aug_ann(x, True)
+# Wrapper for transform_aug_ann to pass necessary arguments
+def _transform_aug_ann_train(examples):
+    return transform_aug_ann(
+        examples, image_processor, train_transform, eval_transform, is_test=False
     )
-elif args.model_args.split_validation is not None:
-    splitted_dt = train_set.train_test_split(test_size=args.model_args.split_validation)
-    train_set, eval_set = splitted_dt["train"], splitted_dt["test"]
 
-print("Dataset Shape", len(train_set), len(eval_set))
-examples = train_set[0]
-print(examples)
+def _transform_aug_ann_eval(examples):
+    return transform_aug_ann(
+        examples, image_processor, train_transform, eval_transform, is_test=True
+    )
+
+train_set = load_dataset(
+    model_args.training_csv, training=True, nan_frac=model_args.nan_frac
+).with_transform(_transform_aug_ann_train)
+
+eval_set = None
+if model_args.validation_csv:
+    eval_set = load_dataset(
+        model_args.validation_csv, training=False
+    ).with_transform(_transform_aug_ann_eval)
+elif model_args.split_validation is not None:
+    splitted_dt = train_set.train_test_split(test_size=model_args.split_validation)
+    train_set, eval_set = splitted_dt["train"], splitted_dt["test"]
+    eval_set = eval_set.with_transform(_transform_aug_ann_eval)
+
+print("Dataset Shape", len(train_set), len(eval_set) if eval_set else "N/A")
+if len(train_set) > 0:
+    examples = train_set[0]
+    print(examples)
+else:
+    print("Train set is empty.")
+
+# Wrapper for collate_fn
+def _collate_fn_wrapper(batch):
+    return collate_fn(batch, image_processor)
+
+# Prepare compute_metrics function
+metrics_computer = compute_metrics_fn(num_classes=model_args.num_class)
 
 trainer = Trainer(
     model=model,
-    args=args.training_args,
-    data_collator=collate_fn,
+    args=training_args,
+    data_collator=_collate_fn_wrapper,
     train_dataset=train_set,
     eval_dataset=eval_set,
-    tokenizer=Config.IMAGE_PROCESSOR,
-    # compute_metrics=compute_metrics,
+    tokenizer=image_processor,
+    compute_metrics=metrics_computer,
     callbacks=[EarlyStoppingCallback(early_stopping_patience=20)],
 )
 
-if eval_set is not None:
+if eval_set is not None and training_args.do_eval:
+    print("Evaluating before training...")
     trainer.evaluate()
-trainer.train()
-if eval_set is not None:
+
+if training_args.do_train:
+    print("Starting training...")
+    trainer.train(resume_from_checkpoint=training_args.resume_from_checkpoint)
+
+if eval_set is not None and training_args.do_eval:
+    print("Evaluating after training...")
     trainer.evaluate()

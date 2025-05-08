@@ -5,8 +5,9 @@ import pandas as pd
 from datasets import Dataset
 from PIL import Image, ImageOps
 from sklearn.preprocessing import LabelEncoder
+from transformers import DetrImageProcessor  # Added for type hinting
 
-from alex_detr.transforms import Config
+from alex_detr.transforms import Config as AugmentationConfig  # Renamed for clarity
 
 
 def _check_nan(category_id):
@@ -93,7 +94,7 @@ def create_annotation_img(data: pd.DataFrame):
 
 
 def load_dataset(
-    data_pth=Config.TRAIN_CSV, training: bool = True, nan_frac: bool = 0.0
+    data_pth: str, training: bool = True, nan_frac: float = 0.0
 ):
     train = load_pd_dataframe(data_pth, training, nan_frac)
     train_features = (
@@ -119,8 +120,14 @@ def _formatted_anns(image_id, category, area, bbox):
 
 
 # transforming a batch
-def transform_aug_ann(examples, is_test=False):
-    trf = Config.TRAIN_TRANSFORM if not is_test else Config.EVAL_TRANSFORM
+def transform_aug_ann(
+    examples,
+    image_processor: DetrImageProcessor,
+    train_transform = AugmentationConfig.TRAIN_TRANSFORM,
+    eval_transform = AugmentationConfig.EVAL_TRANSFORM,
+    is_test=False,
+):
+    trf = train_transform if not is_test else eval_transform
     image_ids = examples["image_id"]
     images, bboxes, area, categories = [], [], [], []
     for image, objects in zip(examples["image"], examples["objects"]):
@@ -137,21 +144,34 @@ def transform_aug_ann(examples, is_test=False):
         for id_, cat_, ar_, box_ in zip(image_ids, categories, area, bboxes)
     ]
 
-    return Config.IMAGE_PROCESSOR(
-        images=images, annotations=targets, return_tensors="pt"
-    )
+    return image_processor(images=images, annotations=targets, return_tensors="pt")
 
 
-def train_val_split(train_ds: Dataset, test_size=0.1, seed=51):
+def train_val_split(
+    train_ds: Dataset,
+    image_processor: DetrImageProcessor,
+    train_transform = AugmentationConfig.TRAIN_TRANSFORM,
+    eval_transform = AugmentationConfig.EVAL_TRANSFORM,
+    test_size=0.1,
+    seed=51,
+):
     dataset = train_ds.train_test_split(test_size=test_size, seed=seed)
-    train_set = dataset["train"].with_transform(transform_aug_ann)
-    eval_set = dataset["test"].with_transform(lambda x: transform_aug_ann(x, True))
+    train_set = dataset["train"].with_transform(
+        lambda x: transform_aug_ann(
+            x, image_processor, train_transform, eval_transform, is_test=False
+        )
+    )
+    eval_set = dataset["test"].with_transform(
+        lambda x: transform_aug_ann(
+            x, image_processor, train_transform, eval_transform, is_test=True
+        )
+    )
     return train_set, eval_set
 
 
-def collate_fn(batch: list):
+def collate_fn(batch: list, image_processor: DetrImageProcessor):
     pixel_values = [item["pixel_values"] for item in batch]
-    encoding = Config.IMAGE_PROCESSOR.pad(pixel_values, return_tensors="pt")
+    encoding = image_processor.pad(pixel_values, return_tensors="pt")
     labels = [item["labels"] for item in batch]
     batch = {}
     batch["pixel_values"] = encoding["pixel_values"]

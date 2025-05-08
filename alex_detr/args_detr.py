@@ -41,9 +41,9 @@ class ModelArgs:
     cls_thr: float = field(
         metadata={"help": "cls thr when compute metrics"}, default=0.25
     )
-    nan_frac: int = field(
+    nan_frac: float = field(
         metadata={"help": "proportion of images with empty labels to use in the training"},
-        default=0.
+        default=0.0
     )
 
 
